@@ -10,7 +10,6 @@ import torch
 def triplet_loss(alpha = 0.2):
     def _triplet_loss(y_pred,Batch_size):
         anchor, positive, negative = y_pred[:int(Batch_size)], y_pred[int(Batch_size):int(2*Batch_size)], y_pred[int(2*Batch_size):]
-
         pos_dist = torch.sqrt(torch.sum(torch.pow(anchor - positive,2), axis=-1))
         neg_dist = torch.sqrt(torch.sum(torch.pow(anchor - negative,2), axis=-1))
 
@@ -26,13 +25,10 @@ def triplet_loss(alpha = 0.2):
     return _triplet_loss
 
 # 交叉熵损失函数
-def focal_loss(gamma=2., alpha=0.25):
-    def _focal_loss(y_pred, y_true):
-        bce_loss = torch.nn.BCELoss()(y_pred, y_true)
-        pt = torch.exp(-bce_loss)
-        focal_loss = alpha * (1 - pt)**gamma * bce_loss
-        return focal_loss
-    return _focal_loss
+def cross_entropy_loss():
+    def _cross_entropy_loss(y_pred, Batch_size):
+        return torch.mean(torch.nn.CrossEntropyLoss()(y_pred[:int(Batch_size)], y_pred[int(2*Batch_size):]))
+    return _cross_entropy_loss
 
 def weights_init(net, init_type='normal', init_gain=0.02):
     def init_func(m):

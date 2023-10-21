@@ -4,11 +4,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import umap
 from tqdm import tqdm
 
 from utils.utils import get_lr
 from utils.utils_metrics import evaluate
-
 
 def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda, test_loader, Batch_size, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank, best_val_loss):
     total_triple_loss   = 0
@@ -36,9 +36,12 @@ def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoc
         optimizer.zero_grad()
         if not fp16:
             outputs1, outputs2 = model_train(images, "train")
+            # outputs1 = umap.UMAP().fit_transform(outputs1.cpu().detach())
+            # outputs1 = torch.as_tensor(outputs1).cuda(local_rank)
 
             _triplet_loss   = loss(outputs1, Batch_size)
-            _CE_loss        = nn.NLLLoss()(F.log_softmax(outputs2, dim = -1), labels)
+           #_CE_loss        = nn.NLLLoss()(F.log_softmax(outputs2, dim = -1), labels)
+            _CE_loss        = nn.CrossEntropyLoss()(outputs2, labels)
             _loss           = _triplet_loss + _CE_loss
 
             _loss.backward()

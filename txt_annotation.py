@@ -1,13 +1,15 @@
 #------------------------------------------------#
 #   进行训练前需要利用这个文件生成cls_train.txt
 #------------------------------------------------#
+import json
 import os
 
 if __name__ == "__main__":
+    config = json.load(open('config.json', 'r'))
     #---------------------#
     #   训练集所在的路径
     #---------------------#
-    datasets_path   = "/kaggle/input/lfw-augmented/datasets"
+    datasets_path   = config["datasets_path"]
 
     types_name      = os.listdir(datasets_path)
     types_name      = sorted(types_name)

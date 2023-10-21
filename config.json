@@ -1,0 +1,22 @@
+{
+  "datasets_path": "/kaggle/input/lfw-augmented/datasets",
+
+  "lfw_eval_flag": true,
+  "lfw_dir_path": "/kaggle/input/lfw-aligned/lfw_funneled_aligned",
+  "lfw_pairs_path": "lfw_pair.txt",
+
+  "fp16": true,
+  "input_shape": [160, 160, 3],
+
+  "backbone": "inception_resnetv1",
+  "model_path": "",
+  "pretrained": false,
+
+  "batch_size": 96,
+  "Init_Epoch": 0,
+  "Epoch": 80,
+
+  "num_workers": 4,
+
+  "val_split": 0.2
+}

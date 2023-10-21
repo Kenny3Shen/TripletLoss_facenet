@@ -1,3 +1,4 @@
+import json
 import os
 from functools import partial
 
@@ -6,11 +7,12 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.optim as optim
+import umap
 from torch.utils.data import DataLoader
 
 from nets.facenet import Facenet
 from nets.facenet_training import (get_lr_scheduler, set_optimizer_lr,
-                                   triplet_loss, weights_init, focal_loss)
+                                   triplet_loss, weights_init)
 from utils.callback import LossHistory
 from utils.dataloader import FacenetDataset, LFWDataset, dataset_collate
 from utils.utils import (get_num_classes, seed_everything, show_config,
@@ -18,6 +20,7 @@ from utils.utils import (get_num_classes, seed_everything, show_config,
 from utils.utils_fit import fit_one_epoch
 
 if __name__ == "__main__":
+    config = json.load(open('config.json', 'r'))
     #-------------------------------#
     #   是否使用Cuda
     #   没有GPU可以设置成False
@@ -48,7 +51,7 @@ if __name__ == "__main__":
     #   fp16        是否使用混合精度训练
     #               可减少约一半的显存、需要pytorch1.7.1以上
     #---------------------------------------------------------------------#
-    fp16            = False
+    fp16            = config["fp16"]
     #--------------------------------------------------------#
     #   指向根目录下的cls_train.txt，读取人脸路径与标签
     #--------------------------------------------------------#
@@ -56,13 +59,13 @@ if __name__ == "__main__":
     #--------------------------------------------------------#
     #   输入图像大小，常用设置如[112, 112, 3]
     #--------------------------------------------------------#
-    input_shape     = [160, 160, 3]
+    input_shape     = config["input_shape"]
     #--------------------------------------------------------#
     #   主干特征提取网络的选择
     #   mobilenet
     #   inception_resnetv1
     #--------------------------------------------------------#
-    backbone        = "inception_resnetv1"
+    backbone        = config["backbone"]
     #----------------------------------------------------------------------------------------------------------------------------#
     #   权值文件的下载请看README，可以通过网盘下载。
     #   模型的 预训练权重 比较重要的部分是 主干特征提取网络的权值部分，用于进行特征提取。
@@ -77,14 +80,14 @@ if __name__ == "__main__":
     #   如果想要让模型从0开始训练，则设置model_path = ''，pretrain = Fasle，此时从0开始训练。
     #----------------------------------------------------------------------------------------------------------------------------#  
     #model_path      = "model_data/facenet_inception_resnetv1.pth"
-    model_path      = ""
+    model_path      = config["model_path"]
     #----------------------------------------------------------------------------------------------------------------------------#
     #   是否使用主干网络的预训练权重，此处使用的是主干的权重，因此是在模型构建的时候进行加载的。
     #   如果设置了model_path，则主干的权值无需加载，pretrained的值无意义。
     #   如果不设置model_path，pretrained = True，此时仅加载主干开始训练。
     #   如果不设置model_path，pretrained = False，此时从0开始训练。
     #----------------------------------------------------------------------------------------------------------------------------#
-    pretrained      = False
+    pretrained      = config["pretrained"]
 
     #----------------------------------------------------------------------------------------------------------------------------#
     #   显存不足与数据集大小无关，提示显存不足请调小batch_size。
@@ -110,9 +113,9 @@ if __name__ == "__main__":
     #                   batch_size需要为3的倍数
     #   Epoch           模型总共训练的epoch
     #------------------------------------------------------#
-    batch_size      = 96
-    Init_Epoch      = 0
-    Epoch           = 60
+    batch_size      = config["batch_size"]
+    Init_Epoch      = config["Init_Epoch"]
+    Epoch           = config["Epoch"]
 
     #------------------------------------------------------------------#
     #   其它训练参数：学习率、优化器、学习率下降有关
@@ -151,16 +154,16 @@ if __name__ == "__main__":
     #   开启后会加快数据读取速度，但是会占用更多内存
     #   内存较小的电脑可以设置为2或者0  
     #------------------------------------------------------------------#
-    num_workers     = 8
+    num_workers     = config["num_workers"]
     #------------------------------------------------------------------#
     #   是否开启LFW评估
     #------------------------------------------------------------------#
-    lfw_eval_flag   = True
+    lfw_eval_flag   = config["lfw_eval_flag"]
     #------------------------------------------------------------------#
     #   LFW评估数据集的文件路径和对应的txt文件
     #------------------------------------------------------------------#
-    lfw_dir_path    = "/kaggle/input/lfw-aligned/lfw_funneled_aligned"
-    lfw_pairs_path  = "/kaggle/input/lfw-aligned/pairs.txt"
+    lfw_dir_path    = config["lfw_dir_path"]
+    lfw_pairs_path  = config["lfw_pairs_path"]
 
     seed_everything(seed)
     #------------------------------------------------------#
@@ -264,7 +267,7 @@ if __name__ == "__main__":
     #-------------------------------------------------------#
     #   0.2用于验证，0.8用于训练
     #-------------------------------------------------------#
-    val_split = 0.2
+    val_split = config["val_split"]
     with open(annotation_path, "r") as f:
         lines = f.readlines()
     np.random.seed(10101)
