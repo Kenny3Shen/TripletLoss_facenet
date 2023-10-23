@@ -1,8 +1,8 @@
 {
-  "datasets_path": "datasets",
+  "datasets_path": "/kaggle/input/lfw-augmented/datasets",
 
   "lfw_eval_flag": true,
-  "lfw_dir_path": "lfw",
+  "lfw_dir_path": "/kaggle/input/lfw-aligned/lfw_funneled_aligned",
   "lfw_pairs_path": "lfw_pair.txt",
   "half_face": false,
 
@@ -10,12 +10,12 @@
   "input_shape": [160, 160, 3],
 
   "backbone": "inception_resnetv1",
-  "model_path": "logs/loss_2023_10_23_11_38_19/best.pth",
+  "model_path": "",
   "pretrained": false,
 
   "batch_size": 96,
   "Init_Epoch": 0,
-  "Epoch": 10,
+  "Epoch": 60,
 
   "num_workers": 4,
 
