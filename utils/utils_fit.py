@@ -4,13 +4,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import umap
 from tqdm import tqdm
 
 from utils.utils import get_lr
 from utils.utils_metrics import evaluate
 
-def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda, test_loader, Batch_size, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank, best_val_loss):
+
+def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda, test_loader, Batch_size, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank):
     total_triple_loss   = 0
     total_CE_loss       = 0
     total_accuracy      = 0
@@ -19,7 +19,7 @@ def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoc
     val_total_CE_loss       = 0
     val_total_accuracy      = 0
 
-    best_val_loss = 10000
+    best_lfw_acc = 0.0
     if local_rank == 0:
         print('Start Train')
         pbar = tqdm(total=epoch_step,desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3)
@@ -36,8 +36,6 @@ def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoc
         optimizer.zero_grad()
         if not fp16:
             outputs1, outputs2 = model_train(images, "train")
-            # outputs1 = umap.UMAP().fit_transform(outputs1.cpu().detach())
-            # outputs1 = torch.as_tensor(outputs1).cuda(local_rank)
 
             _triplet_loss   = loss(outputs1, Batch_size)
            #_CE_loss        = nn.NLLLoss()(F.log_softmax(outputs2, dim = -1), labels)
@@ -50,6 +48,8 @@ def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoc
             from torch.cuda.amp import autocast
             with autocast():
                 outputs1, outputs2 = model_train(images, "train")
+                # outputs1 = umap.UMAP().fit_transform(outputs1.cpu().detach())
+                # outputs1 = torch.as_tensor(outputs1).cuda(local_rank)
 
                 _triplet_loss   = loss(outputs1, Batch_size)
                 #_triplet_loss   = nn.CrossEntropyLoss()(outputs2, labels)
@@ -142,13 +142,12 @@ def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoc
             (total_triple_loss + total_CE_loss) / epoch_step, (val_total_triple_loss + val_total_CE_loss) / epoch_step_val)
         print('Epoch:' + str(epoch + 1) + '/' + str(Epoch))
         print('Total Loss: %.4f' % ((total_triple_loss + total_CE_loss) / epoch_step))
-        cur_val_loss = (val_total_triple_loss + val_total_CE_loss) / epoch_step_val
-        if cur_val_loss < best_val_loss:
+        cur_lfw_acc = np.mean(accuracy)
+        if cur_lfw_acc > best_lfw_acc:
             torch.save(model.state_dict(), os.path.join(save_dir, 'best.pth'))
-            best_val_loss = cur_val_loss
+            best_lfw_acc = cur_lfw_acc
         if epoch + 1 == Epoch:
             torch.save(model.state_dict(), os.path.join(save_dir, 'ep%03d-loss%.3f-val_loss%.3f_last.pth' % (Epoch,
                                                                                                         (total_triple_loss + total_CE_loss) / epoch_step,
                                                                                                         (val_total_triple_loss + val_total_CE_loss) / epoch_step_val)))
-            os.rename(os.path.join(save_dir, 'best.pth'), os.path.join(save_dir, 'val_loss%.3f_best.pth' % best_val_loss))
-        return best_val_loss
+        return best_lfw_acc

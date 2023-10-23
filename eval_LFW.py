@@ -1,3 +1,5 @@
+import json
+
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -6,6 +8,7 @@ from utils.dataloader import LFWDataset
 from utils.utils_metrics import test
 
 if __name__ == "__main__":
+    config = json.load(open("eval_config.json", "r"))
     #--------------------------------------#
     #   是否使用Cuda
     #   没有GPU可以设置成False
@@ -16,25 +19,25 @@ if __name__ == "__main__":
     #   mobilenet
     #   inception_resnetv1
     #--------------------------------------#
-    backbone        = "inception_resnetv1"
+    backbone        = config["backbone"]
     #--------------------------------------------------------#
     #   输入图像大小，常用设置如[112, 112, 3]
     #--------------------------------------------------------#
-    input_shape     = [160, 160, 3]
+    input_shape     = config["input_shape"]
     #--------------------------------------#
     #   训练好的权值文件
     #--------------------------------------#
-    model_path      = "logs/best.pth"
+    model_path      = config["model_path"]
     #--------------------------------------#
     #   LFW评估数据集的文件路径
     #   以及对应的txt文件
     #--------------------------------------#
-    lfw_dir_path    = "lfw"
-    lfw_pairs_path  = "lfw_pair.txt"
+    lfw_dir_path    = config["lfw_dir_path"]
+    lfw_pairs_path  = config["lfw_pairs_path"]
     #--------------------------------------#
     #   评估的批次大小和记录间隔
     #--------------------------------------#
-    batch_size      = 512
+    batch_size      = config["batch_size"]
     log_interval    = 1
     #--------------------------------------#
     #   ROC图的保存路径
@@ -43,8 +46,9 @@ if __name__ == "__main__":
     #--------------------------------------#
     #   half_face为True时，与半色调图像进行验证
     #--------------------------------------#
+    half_face       = config["half_face"]
     test_loader = torch.utils.data.DataLoader(
-        LFWDataset(dir=lfw_dir_path, pairs_path=lfw_pairs_path, image_size=input_shape, half_face=False), batch_size=batch_size, shuffle=False)
+        LFWDataset(dir=lfw_dir_path, pairs_path=lfw_pairs_path, image_size=input_shape, half_face=half_face), batch_size=batch_size, shuffle=False)
 
     model = Facenet(backbone=backbone, mode="predict")
 

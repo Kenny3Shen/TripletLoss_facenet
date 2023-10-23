@@ -340,14 +340,14 @@ if __name__ == "__main__":
                                 drop_last=True, collate_fn=dataset_collate, sampler=val_sampler, 
                                 worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
 
-        best_val_loss   = 10000
+        best_lfw_acc   = 0
         for epoch in range(Init_Epoch, Epoch):
             if distributed:
                 train_sampler.set_epoch(epoch)
                 
             set_optimizer_lr(optimizer, lr_scheduler_func, epoch)
             
-            best_val_loss = max(best_val_loss, fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, Cuda, LFW_loader, batch_size//3, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank, best_val_loss))
+            best_lfw_acc = max(best_lfw_acc, fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, Cuda, LFW_loader, batch_size//3, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank))
 
         if local_rank == 0:
             loss_history.writer.close()
