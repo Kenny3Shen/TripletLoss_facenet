@@ -103,7 +103,7 @@ def calculate_val_far(threshold, dist, actual_issame):
     return val, far
 
 
-def test(test_loader, model, png_save_path, log_interval, batch_size, cuda):
+def test(test_loader, model, png_save_path, log_interval, batch_size, cuda, half_face=False):
     labels, distances = [], []
     pbar = tqdm(enumerate(test_loader))
     for batch_idx, (data_a, data_p, label) in pbar:
@@ -146,6 +146,13 @@ def test(test_loader, model, png_save_path, log_interval, batch_size, cuda):
     print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
     print('Best_thresholds: %2.5f' % best_thresholds)
     print('Validation rate: %2.5f+-%2.5f @ FAR=%2.5f' % (val, val_std, far))
+    file_name = f"lfw_verification_half.txt" if half_face else f"lfw_verification.txt"
+    with(open(file_name, "w")) as f:
+        f.write(f"Half face: {half_face}\n")
+        f.write('Accuracy: %2.5f+-%2.5f\n' % (np.mean(accuracy), np.std(accuracy)))
+        f.write('Best_thresholds: %2.5f\n' % best_thresholds)
+        f.write('Validation rate: %2.5f+-%2.5f @ FAR=%2.5f\n' % (val, val_std, far))
+        f.close()
     plot_roc(fpr, tpr, figure_name=png_save_path)
 
 

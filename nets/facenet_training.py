@@ -1,5 +1,3 @@
-
-
 import math
 from functools import partial
 
@@ -7,28 +5,26 @@ import numpy as np
 import torch
 
 
-def triplet_loss(alpha = 0.2):
-    def _triplet_loss(y_pred,Batch_size):
-        anchor, positive, negative = y_pred[:int(Batch_size)], y_pred[int(Batch_size):int(2*Batch_size)], y_pred[int(2*Batch_size):]
-        pos_dist = torch.sqrt(torch.sum(torch.pow(anchor - positive,2), axis=-1))
-        neg_dist = torch.sqrt(torch.sum(torch.pow(anchor - negative,2), axis=-1))
+def triplet_loss(alpha=0.2):
+    def _triplet_loss(y_pred, Batch_size):
+        # y_pred: [Batch_size * 3, 128]
+        anchor, positive, negative = y_pred[:int(Batch_size)], y_pred[int(Batch_size):int(2 * Batch_size)], y_pred[int(2 * Batch_size):]
 
-        keep_all = (neg_dist - pos_dist < alpha).cpu().numpy().flatten()
-        hard_triplets = np.where(keep_all == 1)
+        pos_dist = torch.sqrt(torch.sum(torch.pow(anchor - positive, 2), axis=-1))
+        neg_dist = torch.sqrt(torch.sum(torch.pow(anchor - negative, 2), axis=-1))
+
+        keep_all = (neg_dist - pos_dist < alpha).cpu().numpy().flatten()  # 保留困难的三元组
+        hard_triplets = np.where(keep_all == 1)  # 选择困难的三元组
 
         pos_dist = pos_dist[hard_triplets]
         neg_dist = neg_dist[hard_triplets]
 
-        basic_loss = pos_dist - neg_dist + alpha
+        basic_loss = pos_dist - neg_dist + alpha  # 计算三元组损失
         loss = torch.sum(basic_loss) / torch.max(torch.tensor(1), torch.tensor(len(hard_triplets[0])))
         return loss
+
     return _triplet_loss
 
-# 交叉熵损失函数
-def cross_entropy_loss():
-    def _cross_entropy_loss(y_pred, Batch_size):
-        return torch.mean(torch.nn.CrossEntropyLoss()(y_pred[:int(Batch_size)], y_pred[int(2*Batch_size):]))
-    return _cross_entropy_loss
 
 def weights_init(net, init_type='normal', init_gain=0.02):
     def init_func(m):
@@ -47,46 +43,50 @@ def weights_init(net, init_type='normal', init_gain=0.02):
         elif classname.find('BatchNorm2d') != -1:
             torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
             torch.nn.init.constant_(m.bias.data, 0.0)
+
     print('initialize network with %s type' % init_type)
     net.apply(init_func)
 
-def get_lr_scheduler(lr_decay_type, lr, min_lr, total_iters, warmup_iters_ratio = 0.1, warmup_lr_ratio = 0.1, no_aug_iter_ratio = 0.3, step_num = 10):
+
+def get_lr_scheduler(lr_decay_type, lr, min_lr, total_iters, warmup_iters_ratio=0.1, warmup_lr_ratio=0.1,
+                     no_aug_iter_ratio=0.3, step_num=10):
     def yolox_warm_cos_lr(lr, min_lr, total_iters, warmup_total_iters, warmup_lr_start, no_aug_iter, iters):
         if iters <= warmup_total_iters:
             # lr = (lr - warmup_lr_start) * iters / float(warmup_total_iters) + warmup_lr_start
             lr = (lr - warmup_lr_start) * pow(iters / float(warmup_total_iters), 2
-            ) + warmup_lr_start
+                                              ) + warmup_lr_start
         elif iters >= total_iters - no_aug_iter:
             lr = min_lr
         else:
             lr = min_lr + 0.5 * (lr - min_lr) * (
-                1.0
-                + math.cos(
-                    math.pi
-                    * (iters - warmup_total_iters)
-                    / (total_iters - warmup_total_iters - no_aug_iter)
-                )
+                    1.0
+                    + math.cos(
+                math.pi
+                * (iters - warmup_total_iters)
+                / (total_iters - warmup_total_iters - no_aug_iter)
+            )
             )
         return lr
 
     def step_lr(lr, decay_rate, step_size, iters):
         if step_size < 1:
             raise ValueError("step_size must above 1.")
-        n       = iters // step_size
-        out_lr  = lr * decay_rate ** n
+        n = iters // step_size
+        out_lr = lr * decay_rate ** n
         return out_lr
 
     if lr_decay_type == "cos":
-        warmup_total_iters  = min(max(warmup_iters_ratio * total_iters, 1), 3)
-        warmup_lr_start     = max(warmup_lr_ratio * lr, 1e-6)
-        no_aug_iter         = min(max(no_aug_iter_ratio * total_iters, 1), 15)
-        func = partial(yolox_warm_cos_lr ,lr, min_lr, total_iters, warmup_total_iters, warmup_lr_start, no_aug_iter)
+        warmup_total_iters = min(max(warmup_iters_ratio * total_iters, 1), 3)
+        warmup_lr_start = max(warmup_lr_ratio * lr, 1e-6)
+        no_aug_iter = min(max(no_aug_iter_ratio * total_iters, 1), 15)
+        func = partial(yolox_warm_cos_lr, lr, min_lr, total_iters, warmup_total_iters, warmup_lr_start, no_aug_iter)
     else:
-        decay_rate  = (min_lr / lr) ** (1 / (step_num - 1))
-        step_size   = total_iters / step_num
+        decay_rate = (min_lr / lr) ** (1 / (step_num - 1))
+        step_size = total_iters / step_num
         func = partial(step_lr, lr, decay_rate, step_size)
 
     return func
+
 
 def set_optimizer_lr(optimizer, lr_scheduler_func, epoch):
     lr = lr_scheduler_func(epoch)

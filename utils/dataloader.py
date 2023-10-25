@@ -51,15 +51,15 @@ class FacenetDataset(Dataset):
             selected_path = self.paths[self.labels[:] == c]
 
         # ------------------------------------#
-        #   随机选择两张
+        #   随机选择两张同一个人的人脸
         # ------------------------------------#
         image_indexes = np.random.choice(range(0, len(selected_path)), 2)
         # ------------------------------------#
-        #   打开图片并放入矩阵
+        #   打开anchor并放入矩阵
         # ------------------------------------#
         image = cvtColor(Image.open(selected_path[image_indexes[0]]))
         # ------------------------------------------#
-        #   翻转图像
+        #   翻转图像，这里可以做数据增强
         # ------------------------------------------#
         if self.rand() < .5 and self.random:
             image = image.transpose(Image.FLIP_LEFT_RIGHT)
@@ -69,9 +69,13 @@ class FacenetDataset(Dataset):
         images[0, :, :, :] = image
         labels[0] = c
 
+        # ------------------------------------#
+        #   打开positive并放入矩阵，这里转为半色调图像？
+        # ------------------------------------#
         image = cvtColor(Image.open(selected_path[image_indexes[1]]))
+        # image = cvtColor(Image.open(selected_path[image_indexes[1]]).convert('1').convert('RGB'))
         # ------------------------------------------#
-        #   翻转图像
+        #   翻转图像，这里可以做数据增强
         # ------------------------------------------#
         if self.rand() < .5 and self.random:
             image = image.transpose(Image.FLIP_LEFT_RIGHT)

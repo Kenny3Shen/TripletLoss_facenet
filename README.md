@@ -12,6 +12,21 @@
 8. [训练步骤 How2train](#训练步骤)
 9. [参考资料 Reference](#Reference)
 
+## Environment
+测试在kaggle上使用最新版本的pytorch上也能运行
+- python==3.8.5
+- pytorch==1.8.0
+- torchvision==0.9.0
+- cudatoolkit==10.2  *(according to your gpu)*
+- others in `requirements.txt` 
+
+## Next Schedule
+1. Use facenet to train a model with original and halftone dataset (from 0 training)
+2. Modify the Loss funtion(three loss funtion combine)
+   1. one triplet loss use color positive image
+   2. another triplet loss use halftone positive image (maybe better?)
+   3. the CrossEntropyLoss use to assist the training
+
 ## Top News
 **`2022-03`**:**进行了大幅度的更新，支持step、cos学习率下降法、支持adam、sgd优化器选择、支持学习率根据batch_size自适应调整。**  
 BiliBili视频中的原仓库地址为：https://github.com/bubbliiiing/facenet-pytorch/tree/bilibili

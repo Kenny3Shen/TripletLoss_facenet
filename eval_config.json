@@ -2,9 +2,9 @@
   "datasets_path": "datasets",
   "backbone": "inception_resnetv1",
   "input_shape": [160,160,3],
-  "model_path": "logs/loss_2023_10_23_14_40_57/best.pth",
+  "model_path": "logs/best.pth",
   "lfw_dir_path": "lfw",
   "lfw_pairs_path": "lfw_pair.txt",
   "batch_size": 512,
-  "half_face": false
+  "half_face": true
 }

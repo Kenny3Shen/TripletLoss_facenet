@@ -62,4 +62,4 @@ if __name__ == "__main__":
         cudnn.benchmark = True
         model = model.cuda()
 
-    test(test_loader, model, png_save_path, log_interval, batch_size, cuda)
+    test(test_loader, model, png_save_path, log_interval, batch_size, cuda, half_face=half_face)

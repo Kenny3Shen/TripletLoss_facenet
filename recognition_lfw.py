@@ -61,6 +61,9 @@ def calc_recognition(person_list, database):
                 min_dist_person = k
         if min_dist_person == name:
             true_recognition += 1
+    file_name = "lfw_recognition.txt" if not half_face else "lfw_recognition_half.txt"
+    with open(file_name, "w") as f:
+        f.write(f"true_recongnition: {true_recognition}, total: {total}, accuracy: {true_recognition / total}")
     print(f"true_recongnition: {true_recognition}, total: {total}, accuracy: {true_recognition / total}")
 
 
