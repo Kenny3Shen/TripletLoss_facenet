@@ -11,7 +11,7 @@ from utils.utils_metrics import evaluate
 
 
 def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val,
-                  Epoch, cuda, test_loader, Batch_size, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank):
+                  Epoch, cuda, test_loader, test_half_loader, Batch_size, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank):
     total_triple_loss = 0
     total_CE_loss = 0
     total_accuracy = 0
@@ -134,26 +134,54 @@ def fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoc
         distances = np.array([subdist for dist in distances for subdist in dist])
         _, _, accuracy, _, _, _, _ = evaluate(distances, labels)
 
+    if lfw_eval_flag:
+        print("开始进行LFW_Halftone数据集的验证。")
+        labels, distances = [], []
+        for _, (data_a, data_p, label) in enumerate(test_half_loader):
+            with torch.no_grad():
+                data_a, data_p = data_a.type(torch.FloatTensor), data_p.type(torch.FloatTensor)
+                if cuda:
+                    data_a, data_p = data_a.cuda(local_rank), data_p.cuda(local_rank)
+                out_a, out_p = model_train(data_a), model_train(data_p)
+                dists = torch.sqrt(torch.sum((out_a - out_p) ** 2, 1))
+            distances.append(dists.data.cpu().numpy())
+            labels.append(label.data.cpu().numpy())
+
+        labels = np.array([sublabel for label in labels for sublabel in label])
+        distances = np.array([subdist for dist in distances for subdist in dist])
+        _, _, accuracy_half, _, _, _, _ = evaluate(distances, labels)
+
     if local_rank == 0:
         pbar.close()
         print('Finish Validation')
 
         if lfw_eval_flag:
             print('LFW_Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
-
+            print('LFW_Half_Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy_half), np.std(accuracy_half)))
         loss_history.append_loss(epoch, np.mean(accuracy) if lfw_eval_flag else total_accuracy / epoch_step, \
                                  (total_triple_loss + total_CE_loss) / epoch_step,
                                  (val_total_triple_loss + val_total_CE_loss) / epoch_step_val)
         print('Epoch:' + str(epoch + 1) + '/' + str(Epoch))
         print('Total Loss: %.4f' % ((total_triple_loss + total_CE_loss) / epoch_step))
+
+        with open(os.path.join(save_dir, 'log.txt'), 'a') as f:
+            f.write('Epoch:' + str(epoch + 1) + '/' + str(Epoch) + '\n')
+            f.write('Total Loss: %.4f' % ((total_triple_loss + total_CE_loss) / epoch_step) + '\n')
+            f.write('Val Total Loss: %.4f' % ((val_total_triple_loss + val_total_CE_loss) / epoch_step_val) + '\n')
+            f.write('Total Accuracy: %.4f' % (total_accuracy / epoch_step) + '\n')
+            f.write('Val Total Accuracy: %.4f' % (val_total_accuracy / epoch_step_val) + '\n')
+            if lfw_eval_flag:
+                f.write('LFW_Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)) + '\n')
+                f.write('LFW_Half_Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy_half), np.std(accuracy_half)) + '\n')
+            f.write('lr: %.6f' % get_lr(optimizer) + '\n')
+            f.write('\n')
+
         cur_lfw_acc = np.mean(accuracy)
         if cur_lfw_acc > best_lfw_acc:
             torch.save(model.state_dict(), os.path.join(save_dir, 'best.pth'))
             best_lfw_acc = cur_lfw_acc
         if epoch + 1 == Epoch:
             torch.save(model.state_dict(), os.path.join(save_dir, 'ep%03d-loss%.3f-val_loss%.3f_last.pth' % (Epoch,
-                                                                                                             (
-                                                                                                                     total_triple_loss + total_CE_loss) / epoch_step,
-                                                                                                             (
-                                                                                                                     val_total_triple_loss + val_total_CE_loss) / epoch_step_val)))
+                                                                                                             (total_triple_loss + total_CE_loss) / epoch_step,
+                                                                                                             (val_total_triple_loss + val_total_CE_loss) / epoch_step_val)))
         return best_lfw_acc

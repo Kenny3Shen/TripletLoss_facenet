@@ -1,5 +1,5 @@
 {
-  "datasets_path": "lfw",
+  "datasets_path": "datasets",
 
   "lfw_eval_flag": true,
   "lfw_dir_path": "lfw",
@@ -10,14 +10,14 @@
   "input_shape": [160, 160, 3],
 
   "backbone": "inception_resnetv1",
-  "model_path": "model_data/facenet_inception_resnetv1.pth",
+  "model_path": "",
   "pretrained": false,
 
   "batch_size": 96,
   "Init_Epoch": 0,
-  "Epoch": 10,
+  "Epoch": 30,
 
   "num_workers": 4,
   "seed": 11,
-  "val_split": 0.3
+  "val_split": 0.15
 }

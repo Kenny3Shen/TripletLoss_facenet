@@ -263,7 +263,8 @@ if __name__ == "__main__":
     #---------------------------------#
     LFW_loader = torch.utils.data.DataLoader(
         LFWDataset(dir=lfw_dir_path, pairs_path=lfw_pairs_path, image_size=input_shape), batch_size=512, shuffle=False) if lfw_eval_flag else None
-
+    LFW_Half_loader = torch.utils.data.DataLoader(
+        LFWDataset(dir=lfw_dir_path, pairs_path=lfw_pairs_path, image_size=input_shape, half_face=True), batch_size=512, shuffle=False) if lfw_eval_flag else None
     #-------------------------------------------------------#
     #   0.2用于验证，0.8用于训练
     #-------------------------------------------------------#
@@ -347,7 +348,7 @@ if __name__ == "__main__":
                 
             set_optimizer_lr(optimizer, lr_scheduler_func, epoch)
             
-            best_lfw_acc = max(best_lfw_acc, fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, Cuda, LFW_loader, batch_size//3, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank))
+            best_lfw_acc = max(best_lfw_acc, fit_one_epoch(model_train, model, loss_history, loss, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, Cuda, LFW_loader, LFW_Half_loader, batch_size//3, lfw_eval_flag, fp16, scaler, save_period, save_dir, local_rank))
 
         if local_rank == 0:
             loss_history.writer.close()
